@@ -1,0 +1,129 @@
+// ─────────────────────────────────────────────────────────────
+//  PayBaNet (پی با نت) — Prisma schema
+//  Source of truth: data/schema.md
+//
+//  Conventions (Laravel-style):
+//    • Primary keys:  BIGINT UNSIGNED AUTO_INCREMENT  (`id`)
+//    • Foreign keys:  BIGINT UNSIGNED, named `<table>_<column>_foreign`
+//    • Unique keys:   named `<table>_<columns>_unique`
+//    • Every table has nullable `created_at` / `updated_at` TIMESTAMP columns
+//    • Money is stored as BIGINT UNSIGNED (Rial)
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+/// مدیران سامانه
+model Admin {
+  id        BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name      String    @db.VarChar(255)
+  phone     String    @unique(map: "admins_phone_unique") @db.VarChar(255)
+  password  String    @db.VarChar(255)
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime? @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  @@map("admins")
+}
+
+/// فروشندگان
+model Seller {
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name         String    @db.VarChar(255)
+  phone        String    @unique(map: "sellers_phone_unique") @db.VarChar(255)
+  password     String    @db.VarChar(255)
+  nationalCode String?   @map("national_code") @db.VarChar(255)
+  economicCode String?   @map("economic_code") @db.VarChar(255)
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime? @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  products  Product[]
+  customers Customer[]
+  invoices  Invoice[]
+
+  @@map("sellers")
+}
+
+/// محصولات هر فروشنده
+model Product {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  sellerId    BigInt    @map("seller_id") @db.UnsignedBigInt
+  name        String    @db.VarChar(255)
+  code        String    @db.VarChar(255)
+  price       BigInt    @db.UnsignedBigInt
+  description String?   @db.VarChar(255)
+  image       String?   @db.VarChar(255)
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime? @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  seller Seller  @relation(fields: [sellerId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "products_seller_id_foreign")
+  orders Order[]
+
+  @@unique([sellerId, code], map: "products_seller_id_code_unique")
+  @@map("products")
+}
+
+/// مشتریان هر فروشنده
+model Customer {
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  sellerId     BigInt    @map("seller_id") @db.UnsignedBigInt
+  name         String    @db.VarChar(255)
+  phone        String    @db.VarChar(255)
+  economicCode String?   @map("economic_code") @db.VarChar(255)
+  description  String?   @db.VarChar(255)
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime? @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  seller   Seller    @relation(fields: [sellerId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "customers_seller_id_foreign")
+  invoices Invoice[]
+
+  @@unique([sellerId, phone], map: "customers_seller_id_phone_unique")
+  @@map("customers")
+}
+
+/// فاکتورها
+model Invoice {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  sellerId    BigInt    @map("seller_id") @db.UnsignedBigInt
+  customerId  BigInt    @map("customer_id") @db.UnsignedBigInt
+  invoiceDate DateTime? @map("invoice_date") @db.Timestamp(0)
+  totalPrice  BigInt    @default(0) @map("total_price") @db.UnsignedBigInt
+  paid        Boolean   @default(false)
+  payLink     String?   @unique(map: "invoices_pay_link_unique") @map("pay_link") @db.VarChar(255)
+  linkViews   Int       @default(0) @map("link_views") @db.UnsignedInt
+  paidAt      DateTime? @map("paid_at") @db.Timestamp(0)
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime? @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  seller   Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "invoices_seller_id_foreign")
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "invoices_customer_id_foreign")
+  orders   Order[]
+
+  @@index([sellerId], map: "invoices_seller_id_foreign")
+  @@index([customerId], map: "invoices_customer_id_foreign")
+  @@map("invoices")
+}
+
+/// اقلام (سفارش‌های) هر فاکتور
+model Order {
+  id        BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  invoiceId BigInt    @map("invoice_id") @db.UnsignedBigInt
+  productId BigInt    @map("product_id") @db.UnsignedBigInt
+  quantity  Int       @default(1) @db.UnsignedInt
+  price     BigInt    @db.UnsignedBigInt
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime? @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "orders_invoice_id_foreign")
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "orders_product_id_foreign")
+
+  @@index([invoiceId], map: "orders_invoice_id_foreign")
+  @@index([productId], map: "orders_product_id_foreign")
+  @@map("orders")
+}

@@ -1,26 +1,224 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, monospace;
+  --color-ink: var(--ink);
+  --color-saffron: var(--saffron);
+  --color-chart-paid: var(--chart-paid);
+  --color-chart-unpaid: var(--chart-unpaid);
+  --font-heading: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/*
+ * PayBaNet palette
+ *   ink      #0F2A2E  deep teal-black (sidebar, brand panel)
+ *   firuze   #0B7A6E  Persian turquoise (primary actions)
+ *   paper    #F5F8F7  cool off-white background
+ *   line     #DCE5E2  hairlines and borders
+ *   saffron  #E3A53B  single highlight (the "paid" stamp)
+ */
+:root {
+  --background: #f5f8f7;
+  --foreground: #10282b;
+  --card: #ffffff;
+  --card-foreground: #10282b;
+  --popover: #ffffff;
+  --popover-foreground: #10282b;
+  --primary: #0b7a6e;
+  --primary-foreground: #ffffff;
+  --secondary: #e8efed;
+  --secondary-foreground: #10282b;
+  --muted: #ebf1ef;
+  --muted-foreground: #536966;
+  --accent: #e3f1ee;
+  --accent-foreground: #0b4f48;
+  --destructive: #c2412d;
+  --border: #dce5e2;
+  --input: #cfdbd8;
+  --ring: #0b7a6e;
+  --chart-1: #0b7a6e;
+  --chart-2: #2ec4b0;
+  --chart-3: #e3a53b;
+  --chart-4: #536966;
+  --chart-5: #0f2a2e;
+  --radius: 0.75rem;
+  --sidebar: #0f2a2e;
+  --sidebar-foreground: #c9dbd7;
+  --sidebar-primary: #2ec4b0;
+  --sidebar-primary-foreground: #06201d;
+  --sidebar-accent: #17393e;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #1d4247;
+  --sidebar-ring: #2ec4b0;
+  --ink: #0f2a2e;
+  --saffron: #e3a53b;
+  /* Dashboard chart (validated: light surface #ffffff) */
+  --chart-paid: #0d9488;
+  --chart-unpaid: #c27c0e;
+}
+
+.dark {
+  --background: #0b1c1f;
+  --foreground: #e4eeec;
+  --card: #10262a;
+  --card-foreground: #e4eeec;
+  --popover: #10262a;
+  --popover-foreground: #e4eeec;
+  --primary: #2ec4b0;
+  --primary-foreground: #06201d;
+  --secondary: #163236;
+  --secondary-foreground: #e4eeec;
+  --muted: #142d31;
+  --muted-foreground: #93aaa6;
+  --accent: #173a3e;
+  --accent-foreground: #e4eeec;
+  --destructive: #f07a66;
+  --border: #1f3f43;
+  --input: #27494d;
+  --ring: #2ec4b0;
+  --chart-1: #2ec4b0;
+  --chart-2: #0b7a6e;
+  --chart-3: #e3a53b;
+  --chart-4: #93aaa6;
+  --chart-5: #e4eeec;
+  --sidebar: #08171a;
+  --sidebar-foreground: #b7cbc7;
+  --sidebar-primary: #2ec4b0;
+  --sidebar-primary-foreground: #06201d;
+  --sidebar-accent: #12292d;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #173236;
+  --sidebar-ring: #2ec4b0;
+  --ink: #08171a;
+  --saffron: #e3a53b;
+  /* Dashboard chart (validated: dark surface #10262a) */
+  --chart-paid: #26a897;
+  --chart-unpaid: #c2852a;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    @apply font-sans;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ── Login page: invoice slip signature ─────────────────────── */
+@layer components {
+  .slip-edge {
+    /* torn receipt edge */
+    mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 18px 100%;
+  }
+}
+
+@keyframes slip-in {
+  from { opacity: 0; transform: translateY(24px) rotate(-4deg); }
+  to   { opacity: 1; transform: translateY(0) rotate(-2deg); }
+}
+@keyframes stamp-in {
+  0%   { opacity: 0; transform: scale(1.8) rotate(-18deg); }
+  60%  { opacity: 1; transform: scale(0.94) rotate(-12deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-12deg); }
+}
+.animate-slip-in  { animation: slip-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-stamp-in { animation: stamp-in 420ms cubic-bezier(0.34, 1.4, 0.64, 1) 900ms both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slip-in, .animate-stamp-in { animation: none; }
+  .animate-slip-in  { transform: rotate(-2deg); }
+  .animate-stamp-in { transform: rotate(-12deg); }
+}
+
+
+/* ── Printable invoice (A4) ─────────────────────────────────── */
+.invoice-sheet {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 14mm 12mm;
+  box-shadow: 0 10px 40px -12px rgb(0 0 0 / 0.25);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+@page {
+  size: A4;
+  margin: 10mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+  .invoice-sheet {
+    width: auto;
+    min-height: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  /* Toasts and dev overlays never belong on paper. */
+  [data-sonner-toaster],
+  nextjs-portal {
+    display: none !important;
+  }
+}
+
+@media screen and (max-width: 840px) {
+  .invoice-sheet {
+    width: 100%;
+    min-height: 0;
+    padding: 6mm 4mm;
+    overflow-x: auto;
+  }
 }
