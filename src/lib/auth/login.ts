@@ -63,7 +63,14 @@ export async function attemptLogin(role: SessionRole, formData: FormData): Promi
     };
   }
 
-  const user = await findCredentials(role, phone);
+  let user: Awaited<ReturnType<typeof findCredentials>>;
+  try {
+    user = await findCredentials(role, phone);
+  } catch (error) {
+    // Infrastructure problem (DB down, wrong credentials in env…): log it, don't crash the page.
+    console.error(`[auth] ${role} login: database error`, error);
+    return { ok: false, phone, message: "ارتباط با سرور برقرار نشد. چند لحظه بعد دوباره تلاش کنید." };
+  }
 
   // Laravel stores bcrypt hashes as $2y$; bcryptjs understands $2a$/$2b$.
   const hash = user?.password.replace(/^\$2y\$/, "$2b$") ?? getDummyHash();

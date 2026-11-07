@@ -13,7 +13,7 @@
 
 ```bash
 npm install                 # also runs `prisma generate`
-cp .env.example .env        # then fill in DB credentials and SESSION_SECRET
+cp .env.example .env        # set DATABASE_URL (percent-encode special chars) and SESSION_SECRET
 npm run db:deploy           # apply migrations
 npm run db:seed             # create the default admin
 npm run dev
