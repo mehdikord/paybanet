@@ -18,6 +18,7 @@ import {
 } from "@/lib/data/customers";
 import { formatDate, formatNumber } from "@/lib/format";
 import { toPersianDigits } from "@/lib/phone";
+import { isAdminScope, scopePaths, type SellerScope } from "@/features/seller-scope-paths";
 import { CustomerRowActions, NewCustomerButton } from "./customer-actions";
 
 function Ltr({ value }: { value: string | null }) {
@@ -44,8 +45,9 @@ function Actions({ customer }: { customer: CustomerListItem }) {
   );
 }
 
-export async function CustomersTable({ params }: { params: CustomerListParams }) {
-  const { items, total, sellerTotal, page, pageCount } = await listCustomers(params);
+export async function CustomersTable({ params, scope }: { params: CustomerListParams; scope: SellerScope }) {
+  const { items, total, sellerTotal, page, pageCount } = await listCustomers(params, scope.sellerId);
+  const admin = isAdminScope(scope);
 
   if (sellerTotal === 0) {
     return (
@@ -54,8 +56,12 @@ export async function CustomersTable({ params }: { params: CustomerListParams })
           <EmptyMedia variant="icon">
             <UsersIcon />
           </EmptyMedia>
-          <EmptyTitle>هنوز مشتری‌ای ثبت نکرده‌اید</EmptyTitle>
-          <EmptyDescription>مشتریانتان را ثبت کنید تا موقع صدور فاکتور فقط انتخابشان کنید.</EmptyDescription>
+          <EmptyTitle>{admin ? "این فروشنده هنوز مشتری‌ای ندارد" : "هنوز مشتری‌ای ثبت نکرده‌اید"}</EmptyTitle>
+          <EmptyDescription>
+            {admin
+              ? "برای این فروشنده مشتری ثبت کنید تا در فاکتورهایش قابل انتخاب باشد."
+              : "مشتریانتان را ثبت کنید تا موقع صدور فاکتور فقط انتخابشان کنید."}
+          </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <NewCustomerButton />
@@ -161,7 +167,7 @@ export async function CustomersTable({ params }: { params: CustomerListParams })
       </ul>
 
       <DataPagination
-        basePath="/sellers/customers"
+        basePath={scopePaths(scope).customers}
         params={{
           q: params.q,
           invoices: params.invoices === "all" ? undefined : params.invoices,

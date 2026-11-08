@@ -14,7 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatNumber } from "@/lib/format";
-import { deleteCustomer } from "../actions";
+import { useSellerScope } from "@/features/seller-scope";
+import { deleteCustomer } from "./actions";
 import { CustomerFormDialog, type EditableCustomer } from "./customer-form-dialog";
 
 export function NewCustomerButton({ variant = "default" }: { variant?: "default" | "outline" }) {
@@ -37,6 +38,7 @@ export function CustomerRowActions({
   customer: EditableCustomer;
   invoiceCount: number;
 }) {
+  const scope = useSellerScope();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -85,7 +87,7 @@ export function CustomerRowActions({
             ? `این مشتری در ${formatNumber(invoiceCount)} فاکتور استفاده شده و برای حفظ سابقه فاکتورها قابل حذف نیست.`
             : undefined
         }
-        onConfirm={() => deleteCustomer(customer.id)}
+        onConfirm={() => deleteCustomer(scope.sellerId, customer.id)}
       />
     </>
   );

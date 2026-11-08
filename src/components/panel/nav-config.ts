@@ -47,6 +47,18 @@ export const PANELS: Record<PanelKey, PanelConfig> = {
         pattern: /^\/admins\/sellers\/[^/]+$/,
         crumbs: [{ title: "فروشندگان", href: "/admins/sellers" }, { title: "ویرایش فروشنده" }],
       },
+      {
+        pattern: /^\/admins\/sellers\/[^/]+\/invoices$/,
+        crumbs: [{ title: "فروشندگان", href: "/admins/sellers" }, { title: "فاکتورهای فروشنده" }],
+      },
+      {
+        pattern: /^\/admins\/sellers\/[^/]+\/products$/,
+        crumbs: [{ title: "فروشندگان", href: "/admins/sellers" }, { title: "محصولات فروشنده" }],
+      },
+      {
+        pattern: /^\/admins\/sellers\/[^/]+\/customers$/,
+        crumbs: [{ title: "فروشندگان", href: "/admins/sellers" }, { title: "مشتریان فروشنده" }],
+      },
     ],
   },
   seller: {

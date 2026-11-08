@@ -4,6 +4,7 @@ import { CheckCircle2Icon, LockKeyholeIcon, ShieldCheckIcon } from "lucide-react
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { LogoMark } from "@/components/brand/logo";
+import { DatePicker } from "@/components/data/date-picker";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { formatToman } from "@/lib/money";
@@ -22,6 +23,8 @@ export type PaymentInvoice = {
   paid: boolean;
   /** Jalali date of payment, formatted on the server. */
   paidDate: string | null;
+  /** Today in Tehran ("YYYY-MM-DD"), the default payment day. */
+  today: string;
   items: { name: string; quantity: number; price: string; lineTotal: string }[];
 };
 
@@ -36,6 +39,7 @@ export function PaymentView({ invoice }: { invoice: PaymentInvoice }) {
   const [paid, setPaid] = useState(invoice.paid);
   const [paidDate, setPaidDate] = useState(invoice.paidDate);
   const [justPaid, setJustPaid] = useState(false);
+  const [paidDay, setPaidDay] = useState(invoice.today);
   const [error, setError] = useState<string>();
   const [isPending, startTransition] = useTransition();
   const viewRecorded = useRef(false);
@@ -50,7 +54,7 @@ export function PaymentView({ invoice }: { invoice: PaymentInvoice }) {
   const pay = () =>
     startTransition(async () => {
       setError(undefined);
-      const result = await payInvoice(invoice.token);
+      const result = await payInvoice(invoice.token, paidDay);
       if (!result.ok) {
         setError(result.message ?? "پرداخت انجام نشد. دوباره تلاش کنید.");
         return;
@@ -87,7 +91,7 @@ export function PaymentView({ invoice }: { invoice: PaymentInvoice }) {
       </section>
 
       {/* Receipt */}
-      <div className="relative mx-auto -mt-20 max-w-md px-4 pb-36 sm:pb-12">
+      <div className="relative mx-auto -mt-20 max-w-md px-4 pb-56 sm:pb-12">
         <article
           aria-label="جزئیات فاکتور"
           className="slip-edge relative rounded-t-2xl bg-card px-5 pt-6 pb-10 shadow-[0_24px_50px_-24px_rgb(15_42_46/0.45)] ring-1 ring-border"
@@ -152,6 +156,18 @@ export function PaymentView({ invoice }: { invoice: PaymentInvoice }) {
               </div>
             ) : (
               <>
+                <div className="flex items-center justify-between gap-3">
+                  <label htmlFor="paid-day" className="shrink-0 text-sm font-medium">
+                    تاریخ پرداخت
+                  </label>
+                  <DatePicker
+                    id="paid-day"
+                    value={paidDay}
+                    onChange={setPaidDay}
+                    disableFuture
+                    className="w-auto min-w-44"
+                  />
+                </div>
                 {error && (
                   <p role="alert" className="text-center text-sm text-destructive">
                     {error}

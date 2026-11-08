@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Node-only xlsx writer (streams, zip): load it from node_modules at runtime.
+  serverExternalPackages: ["exceljs"],
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

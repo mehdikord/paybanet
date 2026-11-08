@@ -14,7 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatNumber } from "@/lib/format";
-import { deleteProduct } from "../actions";
+import { useSellerScope } from "@/features/seller-scope";
+import { deleteProduct } from "./actions";
 import { ProductFormDialog, type EditableProduct } from "./product-form-dialog";
 
 export function NewProductButton() {
@@ -37,6 +38,7 @@ export function ProductRowActions({
   product: EditableProduct;
   orderCount: number;
 }) {
+  const scope = useSellerScope();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -85,7 +87,7 @@ export function ProductRowActions({
             ? `این محصول در ${formatNumber(orderCount)} ردیف فاکتور استفاده شده و برای حفظ سابقه فاکتورها قابل حذف نیست.`
             : undefined
         }
-        onConfirm={() => deleteProduct(product.id)}
+        onConfirm={() => deleteProduct(scope.sellerId, product.id)}
       />
     </>
   );

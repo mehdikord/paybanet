@@ -4,7 +4,7 @@ import { randomInt } from "node:crypto";
 import { refresh } from "next/cache";
 
 import { Prisma } from "@/generated/prisma/client";
-import { requireSellerId } from "@/lib/auth/seller";
+import { resolveSellerId } from "@/lib/auth/seller-scope";
 import { getInvoiceForEdit, type InvoiceDetail } from "@/lib/data/invoices";
 import { startOfTehranDay } from "@/lib/dates";
 import { db } from "@/lib/db";
@@ -28,10 +28,11 @@ type InvoiceField = "customerId" | "invoiceDate" | "items";
 
 /** Creates (id = null) or updates one of the seller's invoices. Totals are computed here. */
 export async function saveInvoice(
+  scopeSellerId: string | null,
   invoiceId: string | null,
   input: unknown,
 ): Promise<MutationResult<InvoiceField> & { payLink?: string }> {
-  const sellerId = await requireSellerId();
+  const sellerId = await resolveSellerId(scopeSellerId);
 
   const parsed = invoiceSchema.safeParse(input);
   if (!parsed.success) {
@@ -116,8 +117,11 @@ export async function saveInvoice(
   return { ok: false, message: "ساخت لینک پرداخت انجام نشد. دوباره تلاش کنید." };
 }
 
-export async function deleteInvoice(invoiceId: string): Promise<MutationResult> {
-  const sellerId = await requireSellerId();
+export async function deleteInvoice(
+  scopeSellerId: string | null,
+  invoiceId: string,
+): Promise<MutationResult> {
+  const sellerId = await resolveSellerId(scopeSellerId);
   const id = parseId(invoiceId);
   if (!id) return { ok: false, message: "فاکتور پیدا نشد." };
 
@@ -130,16 +134,22 @@ export async function deleteInvoice(invoiceId: string): Promise<MutationResult> 
 }
 
 /** Loads an invoice into the edit modal. */
-export async function loadInvoiceForEdit(invoiceId: string): Promise<InvoiceDetail | null> {
+export async function loadInvoiceForEdit(
+  scopeSellerId: string | null,
+  invoiceId: string,
+): Promise<InvoiceDetail | null> {
   const id = parseId(invoiceId);
-  return id ? getInvoiceForEdit(id) : null;
+  return id ? getInvoiceForEdit(id, scopeSellerId) : null;
 }
 
 export type PickerOption = { id: string; label: string; hint?: string; price?: string };
 
 /** Searchable customer picker (top 20 matches). */
-export async function searchCustomerOptions(query: string): Promise<PickerOption[]> {
-  const sellerId = await requireSellerId();
+export async function searchCustomerOptions(
+  scopeSellerId: string | null,
+  query: string,
+): Promise<PickerOption[]> {
+  const sellerId = await resolveSellerId(scopeSellerId);
   const q = toLatinDigits(query.trim()).slice(0, 100);
   const rows = await db.customer.findMany({
     where: {
@@ -154,8 +164,11 @@ export async function searchCustomerOptions(query: string): Promise<PickerOption
 }
 
 /** Searchable product picker (top 20 matches), with the current price in Toman. */
-export async function searchProductOptions(query: string): Promise<PickerOption[]> {
-  const sellerId = await requireSellerId();
+export async function searchProductOptions(
+  scopeSellerId: string | null,
+  query: string,
+): Promise<PickerOption[]> {
+  const sellerId = await resolveSellerId(scopeSellerId);
   const q = toLatinDigits(query.trim()).slice(0, 100);
   const rows = await db.product.findMany({
     where: {

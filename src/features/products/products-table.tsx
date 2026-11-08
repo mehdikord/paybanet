@@ -18,6 +18,7 @@ import {
   type ProductListParams,
 } from "@/lib/data/products";
 import { formatToman } from "@/lib/money";
+import { isAdminScope, scopePaths, type SellerScope } from "@/features/seller-scope-paths";
 import { NewProductButton, ProductRowActions } from "./product-actions";
 
 function Price({ toman }: { toman: string }) {
@@ -51,8 +52,9 @@ function Actions({ product }: { product: ProductListItem }) {
   );
 }
 
-export async function ProductsTable({ params }: { params: ProductListParams }) {
-  const { items, total, sellerTotal, page, pageCount } = await listProducts(params);
+export async function ProductsTable({ params, scope }: { params: ProductListParams; scope: SellerScope }) {
+  const { items, total, sellerTotal, page, pageCount } = await listProducts(params, scope.sellerId);
+  const admin = isAdminScope(scope);
 
   if (sellerTotal === 0) {
     return (
@@ -61,8 +63,12 @@ export async function ProductsTable({ params }: { params: ProductListParams }) {
           <EmptyMedia variant="icon">
             <PackageIcon />
           </EmptyMedia>
-          <EmptyTitle>هنوز محصولی ثبت نکرده‌اید</EmptyTitle>
-          <EmptyDescription>محصولات و خدماتتان را با قیمت ثبت کنید تا فاکتورها سریع‌تر صادر شوند.</EmptyDescription>
+          <EmptyTitle>{admin ? "این فروشنده هنوز محصولی ندارد" : "هنوز محصولی ثبت نکرده‌اید"}</EmptyTitle>
+          <EmptyDescription>
+            {admin
+              ? "محصولات و خدمات این فروشنده را با قیمت ثبت کنید تا در فاکتورهایش قابل انتخاب باشند."
+              : "محصولات و خدماتتان را با قیمت ثبت کنید تا فاکتورها سریع‌تر صادر شوند."}
+          </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <NewProductButton />
@@ -161,7 +167,7 @@ export async function ProductsTable({ params }: { params: ProductListParams }) {
       </ul>
 
       <DataPagination
-        basePath="/sellers/products"
+        basePath={scopePaths(scope).products}
         params={{
           q: params.q,
           min: params.minPrice?.toString(),

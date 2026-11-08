@@ -16,12 +16,15 @@ export function DatePicker({
   value,
   onChange,
   invalid,
+  disableFuture,
   className,
 }: {
   id?: string;
   value: string;
   onChange: (isoDay: string) => void;
   invalid?: boolean;
+  /** Days after today (Tehran) cannot be picked. */
+  disableFuture?: boolean;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -50,6 +53,7 @@ export function DatePicker({
           mode="single"
           selected={selected}
           defaultMonth={selected}
+          disabled={disableFuture ? { after: isoDayToPickerDate(todayIsoDay()) } : undefined}
           onSelect={(date) => {
             if (!date) return;
             onChange(pickedDateToIsoDay(date));
@@ -57,7 +61,7 @@ export function DatePicker({
           }}
           captionLayout="dropdown"
           startMonth={new Date(2015, 0)}
-          endMonth={new Date(new Date().getFullYear() + 2, 11)}
+          endMonth={disableFuture ? isoDayToPickerDate(todayIsoDay()) : new Date(new Date().getFullYear() + 2, 11)}
           autoFocus
         />
         <div className="flex justify-between border-t p-2">

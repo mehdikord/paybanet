@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 
 import { Prisma } from "@/generated/prisma/client";
-import { requireSellerId } from "@/lib/auth/seller";
+import { resolveSellerId } from "@/lib/auth/seller-scope";
 import { db } from "@/lib/db";
 import type { MutationResult } from "@/lib/mutation";
 import { customerSchema } from "@/lib/validations/customer";
@@ -16,10 +16,11 @@ function parseId(value: unknown): bigint | null {
 
 /** Creates a customer (id = null) or updates one of the seller's customers. */
 export async function saveCustomer(
+  scopeSellerId: string | null,
   customerId: string | null,
   input: unknown,
 ): Promise<MutationResult<"name" | "phone" | "economicCode" | "description">> {
-  const sellerId = await requireSellerId();
+  const sellerId = await resolveSellerId(scopeSellerId);
 
   const parsed = customerSchema.safeParse(input);
   if (!parsed.success) {
@@ -59,8 +60,11 @@ export async function saveCustomer(
 }
 
 /** Deletes a customer, unless they already appear on an invoice. */
-export async function deleteCustomer(customerId: string): Promise<MutationResult> {
-  const sellerId = await requireSellerId();
+export async function deleteCustomer(
+  scopeSellerId: string | null,
+  customerId: string,
+): Promise<MutationResult> {
+  const sellerId = await resolveSellerId(scopeSellerId);
   const id = parseId(customerId);
   if (!id) return { ok: false, message: "مشتری پیدا نشد." };
 

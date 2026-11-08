@@ -17,7 +17,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { digitsOnly, formatAmountInput, formatToman } from "@/lib/money";
 import { productSchema, type ProductInput } from "@/lib/validations/product";
-import { saveProduct } from "../actions";
+import { useSellerScope } from "@/features/seller-scope";
+import { saveProduct } from "./actions";
 
 export type EditableProduct = ProductInput & { id: string };
 
@@ -47,6 +48,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
 
 function ProductForm({ product, onDone }: { product?: EditableProduct; onDone: () => void }) {
   const isEdit = !!product;
+  const scope = useSellerScope();
   const { form, onSubmit, isPending, error } = useMutationForm({
     schema: productSchema,
     defaultValues: product
@@ -57,7 +59,7 @@ function ProductForm({ product, onDone }: { product?: EditableProduct; onDone: (
           description: product.description ?? "",
         }
       : emptyProduct,
-    submit: (values) => saveProduct(product?.id ?? null, values),
+    submit: (values) => saveProduct(scope.sellerId, product?.id ?? null, values),
     onSuccess: onDone,
   });
   const { errors } = form.formState;

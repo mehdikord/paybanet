@@ -31,7 +31,8 @@ import {
   searchCustomerOptions,
   searchProductOptions,
   type PickerOption,
-} from "../actions";
+} from "./actions";
+import { useSellerScope } from "@/features/seller-scope";
 
 const emptyItem: InvoiceItemInput = { productId: "", productName: "", quantity: "1", price: "" };
 
@@ -56,11 +57,12 @@ export function InvoiceFormDialog({ open, onOpenChange, invoiceId }: Props) {
 
 /** Loads the invoice, then renders the form with its values. */
 function EditInvoiceLoader({ invoiceId, onDone }: { invoiceId: string; onDone: () => void }) {
+  const scope = useSellerScope();
   const [values, setValues] = useState<InvoiceInput | null | undefined>();
 
   useEffect(() => {
     let cancelled = false;
-    loadInvoiceForEdit(invoiceId).then((invoice) => {
+    loadInvoiceForEdit(scope.sellerId, invoiceId).then((invoice) => {
       if (cancelled) return;
       setValues(
         invoice && {
@@ -79,7 +81,7 @@ function EditInvoiceLoader({ invoiceId, onDone }: { invoiceId: string; onDone: (
     return () => {
       cancelled = true;
     };
-  }, [invoiceId]);
+  }, [invoiceId, scope.sellerId]);
 
   if (values === undefined) {
     return (
@@ -111,6 +113,7 @@ function InvoiceForm({
   initial?: InvoiceInput;
   onDone: () => void;
 }) {
+  const scope = useSellerScope();
   const isEdit = !!invoiceId;
   const [created, setCreated] = useState<{ payLink: string; message?: string } | null>(null);
 
@@ -122,7 +125,7 @@ function InvoiceForm({
       invoiceDate: todayIsoDay(),
       items: [emptyItem],
     },
-    submit: (values) => saveInvoice(invoiceId ?? null, values),
+    submit: (values) => saveInvoice(scope.sellerId, invoiceId ?? null, values),
     onSuccess: (result) => {
       if (!isEdit && result.payLink) {
         setCreated({ payLink: result.payLink, message: result.message });
@@ -163,7 +166,7 @@ function InvoiceForm({
                   form.setValue("customerName", option.label);
                   field.onChange(option.id);
                 }}
-                search={searchCustomerOptions}
+                search={(q) => searchCustomerOptions(scope.sellerId, q)}
                 placeholder="انتخاب مشتری"
                 searchPlaceholder="جستجوی نام یا موبایل…"
                 emptyText="مشتری‌ای پیدا نشد. اول از بخش مشتریان اضافه‌اش کنید."
@@ -235,7 +238,7 @@ function InvoiceForm({
                           });
                           productField.onChange(option.id);
                         }}
-                        search={searchProductOptions}
+                        search={(q) => searchProductOptions(scope.sellerId, q)}
                         placeholder={`انتخاب محصول ردیف ${(index + 1).toLocaleString("fa-IR")}`}
                         searchPlaceholder="جستجوی نام یا کد محصول…"
                         emptyText="محصولی پیدا نشد. اول از بخش محصولات اضافه‌اش کنید."

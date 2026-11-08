@@ -1,4 +1,4 @@
-import { SearchXIcon, StoreIcon, UserPlusIcon } from "lucide-react";
+import { FileTextIcon, PackageIcon, SearchXIcon, StoreIcon, UserPlusIcon, UsersIcon, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -33,21 +33,26 @@ function Ltr({ value }: { value: string | null }) {
   );
 }
 
-function Counts({ counts }: { counts: SellerListItem["counts"] }) {
-  const items = [
-    { label: "محصول", value: counts.products },
-    { label: "مشتری", value: counts.customers },
-    { label: "فاکتور", value: counts.invoices },
-  ];
+const SECTIONS: { key: keyof SellerListItem["counts"]; label: string; noun: string; icon: LucideIcon }[] = [
+  { key: "products", label: "محصولات", noun: "محصول", icon: PackageIcon },
+  { key: "customers", label: "مشتریان", noun: "مشتری", icon: UsersIcon },
+  { key: "invoices", label: "فاکتورها", noun: "فاکتور", icon: FileTextIcon },
+];
+
+/** Opens the seller's products / customers / invoices management page. */
+function SectionLink({ seller, section }: { seller: SellerListItem; section: (typeof SECTIONS)[number] }) {
+  const count = seller.counts[section.key];
   return (
-    <span className="flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground">
-      {items.map((item) => (
-        <span key={item.label}>
-          <span className="font-semibold text-foreground tabular-nums">{formatNumber(item.value)}</span>{" "}
-          {item.label}
-        </span>
-      ))}
-    </span>
+    <Button variant="outline" size="sm" asChild className="tabular-nums">
+      <Link
+        href={`/admins/sellers/${seller.id}/${section.key}`}
+        aria-label={`مدیریت ${section.label} ${seller.name} (${formatNumber(count)} ${section.noun})`}
+      >
+        <section.icon />
+        {formatNumber(count)}
+        <span className="text-muted-foreground">{section.noun}</span>
+      </Link>
+    </Button>
   );
 }
 
@@ -106,10 +111,12 @@ export async function SellersTable({ query, page }: { query: string; page: numbe
             <TableRow className="hover:bg-transparent">
               <TableHead className="h-11 ps-5">فروشنده</TableHead>
               <TableHead>شماره موبایل</TableHead>
-              <TableHead className="hidden lg:table-cell">کد ملی</TableHead>
-              <TableHead className="hidden lg:table-cell">کد اقتصادی</TableHead>
-              <TableHead className="hidden xl:table-cell">اطلاعات ثبت‌شده</TableHead>
-              <TableHead>تاریخ عضویت</TableHead>
+              <TableHead className="hidden xl:table-cell">کد ملی</TableHead>
+              <TableHead className="hidden xl:table-cell">کد اقتصادی</TableHead>
+              {SECTIONS.map((section) => (
+                <TableHead key={section.key}>{section.label}</TableHead>
+              ))}
+              <TableHead className="hidden lg:table-cell">تاریخ عضویت</TableHead>
               <TableHead className="w-14 pe-3">
                 <span className="sr-only">عملیات</span>
               </TableHead>
@@ -129,16 +136,20 @@ export async function SellersTable({ query, page }: { query: string; page: numbe
                 <TableCell>
                   <Ltr value={seller.phone} />
                 </TableCell>
-                <TableCell className="hidden lg:table-cell">
+                <TableCell className="hidden xl:table-cell">
                   <Ltr value={seller.nationalCode} />
                 </TableCell>
-                <TableCell className="hidden lg:table-cell">
+                <TableCell className="hidden xl:table-cell">
                   <Ltr value={seller.economicCode} />
                 </TableCell>
-                <TableCell className="hidden xl:table-cell">
-                  <Counts counts={seller.counts} />
+                {SECTIONS.map((section) => (
+                  <TableCell key={section.key}>
+                    <SectionLink seller={seller} section={section} />
+                  </TableCell>
+                ))}
+                <TableCell className="hidden text-muted-foreground lg:table-cell">
+                  {formatDate(seller.createdAt)}
                 </TableCell>
-                <TableCell className="text-muted-foreground">{formatDate(seller.createdAt)}</TableCell>
                 <TableCell className="pe-3">{rowActions(seller)}</TableCell>
               </TableRow>
             ))}
@@ -161,10 +172,12 @@ export async function SellersTable({ query, page }: { query: string; page: numbe
               </div>
               <div className="-me-2 -mt-1">{rowActions(seller)}</div>
             </div>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-sm">
-              <Counts counts={seller.counts} />
-              <span className="text-muted-foreground">{formatDate(seller.createdAt)}</span>
+            <div className="mt-3 grid grid-cols-3 gap-2 border-t pt-3">
+              {SECTIONS.map((section) => (
+                <SectionLink key={section.key} seller={seller} section={section} />
+              ))}
             </div>
+            <p className="mt-2 text-xs text-muted-foreground">عضویت: {formatDate(seller.createdAt)}</p>
           </li>
         ))}
       </ul>

@@ -19,8 +19,8 @@ import { getSellerDashboard } from "@/lib/data/dashboard";
 import { formatDate, formatNumber } from "@/lib/format";
 import { formatToman } from "@/lib/money";
 import { toPersianDigits } from "@/lib/phone";
-import { NewInvoiceButton } from "./invoices/_components/invoice-actions";
-import { InvoiceStatusBadge } from "./invoices/_components/status-badge";
+import { NewInvoiceButton } from "@/features/invoices/invoice-actions";
+import { InvoiceStatusBadge } from "@/features/invoices/status-badge";
 import { MonthlyChart } from "./_components/monthly-chart";
 
 export const metadata: Metadata = {

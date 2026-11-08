@@ -9,6 +9,7 @@ import { formatDateTime, formatNumber } from "@/lib/format";
 import { updateSeller } from "../actions";
 import { SellerDangerZone } from "../_components/seller-danger-zone";
 import { SellerForm } from "../_components/seller-form";
+import { SellerSectionNav } from "../_components/seller-section-nav";
 
 export const metadata: Metadata = {
   title: "ویرایش فروشنده",
@@ -30,6 +31,7 @@ async function EditSeller({ params }: PageProps<"/admins/sellers/[id]">) {
 
   return (
     <>
+      <SellerSectionNav seller={seller} current="profile" />
       <PageHeader title={seller.name} description="اطلاعات حساب فروشنده را ویرایش کنید." />
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">

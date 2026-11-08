@@ -1,9 +1,11 @@
 import { LinkIcon } from "lucide-react";
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPublicInvoice } from "@/lib/data/invoices";
+import { todayIsoDay } from "@/lib/dates";
 import { formatDate } from "@/lib/format";
 import { toPersianDigits } from "@/lib/phone";
 import { PaymentView } from "./payment-view";
@@ -28,6 +30,9 @@ function InvalidLink() {
 }
 
 async function Payment({ params }: PageProps<"/customers/payment/[token]">) {
+  // Always render per request: payment status is live, and "today" (the default
+  // payment day) must be the visitor's current Tehran day, never a prerendered one.
+  await connection();
   const { token } = await params;
   const invoice = await getPublicInvoice(token);
   if (!invoice) return <InvalidLink />;
@@ -43,6 +48,7 @@ async function Payment({ params }: PageProps<"/customers/payment/[token]">) {
         total: invoice.total,
         paid: invoice.paid,
         paidDate: invoice.paidAt ? formatDate(invoice.paidAt) : null,
+        today: todayIsoDay(),
         items: invoice.items.map(({ name, quantity, price, lineTotal }) => ({ name, quantity, price, lineTotal })),
       }}
     />

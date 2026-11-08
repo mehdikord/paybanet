@@ -19,6 +19,7 @@ import {
 import { formatDate, formatNumber } from "@/lib/format";
 import { formatToman } from "@/lib/money";
 import { toPersianDigits } from "@/lib/phone";
+import { isAdminScope, scopePaths, type SellerScope } from "@/features/seller-scope-paths";
 import { InvoiceRowActions, NewInvoiceButton, PrintInvoiceButton } from "./invoice-actions";
 import { InvoiceStatusBadge } from "./status-badge";
 
@@ -83,8 +84,9 @@ function Summary({
   );
 }
 
-export async function InvoicesTable({ params }: { params: InvoiceListParams }) {
-  const { items, total, sellerTotal, page, pageCount, summary } = await listInvoices(params);
+export async function InvoicesTable({ params, scope }: { params: InvoiceListParams; scope: SellerScope }) {
+  const { items, total, sellerTotal, page, pageCount, summary } = await listInvoices(params, scope.sellerId);
+  const admin = isAdminScope(scope);
 
   if (sellerTotal === 0) {
     return (
@@ -93,9 +95,11 @@ export async function InvoicesTable({ params }: { params: InvoiceListParams }) {
           <EmptyMedia variant="icon">
             <FileTextIcon />
           </EmptyMedia>
-          <EmptyTitle>هنوز فاکتوری صادر نکرده‌اید</EmptyTitle>
+          <EmptyTitle>{admin ? "این فروشنده هنوز فاکتوری ندارد" : "هنوز فاکتوری صادر نکرده‌اید"}</EmptyTitle>
           <EmptyDescription>
-            اولین فاکتور را صادر کنید؛ لینک پرداختش ساخته می‌شود تا برای مشتری بفرستید.
+            {admin
+              ? "برای این فروشنده فاکتور صادر کنید؛ لینک پرداختش ساخته می‌شود تا برای مشتری فرستاده شود."
+              : "اولین فاکتور را صادر کنید؛ لینک پرداختش ساخته می‌شود تا برای مشتری بفرستید."}
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
@@ -202,7 +206,7 @@ export async function InvoicesTable({ params }: { params: InvoiceListParams }) {
 
       {items.length > 0 && (
         <DataPagination
-          basePath="/sellers/invoices"
+          basePath={scopePaths(scope).invoices}
           params={{
             q: params.q,
             status: params.status === "all" ? undefined : params.status,

@@ -1,10 +1,11 @@
 /**
- * Product queries for the seller panel. Always scoped to the signed-in seller.
+ * Product queries for the seller panel. Scoped to the signed-in seller, or to
+ * the seller an admin is managing when `sellerId` is passed.
  */
 import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
-import { requireSellerId } from "@/lib/auth/seller";
+import { resolveSellerId } from "@/lib/auth/seller-scope";
 import { db } from "@/lib/db";
 import { rialToToman, tomanToRial } from "@/lib/money";
 import { toLatinDigits } from "@/lib/phone";
@@ -63,8 +64,8 @@ const orderBy: Record<ProductListParams["sort"], Prisma.ProductOrderByWithRelati
   price_desc: [{ price: "desc" }, { id: "desc" }],
 };
 
-export async function listProducts(params: ProductListParams) {
-  const sellerId = await requireSellerId();
+export async function listProducts(params: ProductListParams, scopeSellerId?: string | null) {
+  const sellerId = await resolveSellerId(scopeSellerId);
   const q = toLatinDigits(params.q);
 
   const price: Prisma.BigIntFilter = {};

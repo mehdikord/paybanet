@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toLatinDigits } from "@/lib/phone";
 import { customerSchema, type CustomerInput } from "@/lib/validations/customer";
-import { saveCustomer } from "../actions";
+import { useSellerScope } from "@/features/seller-scope";
+import { saveCustomer } from "./actions";
 
 export type EditableCustomer = CustomerInput & { id: string };
 
@@ -36,6 +37,7 @@ export function CustomerFormDialog({ open, onOpenChange, customer }: Props) {
 
 function CustomerForm({ customer, onDone }: { customer?: EditableCustomer; onDone: () => void }) {
   const isEdit = !!customer;
+  const scope = useSellerScope();
   const { form, onSubmit, isPending, error } = useMutationForm({
     schema: customerSchema,
     defaultValues: customer
@@ -46,7 +48,7 @@ function CustomerForm({ customer, onDone }: { customer?: EditableCustomer; onDon
           description: customer.description ?? "",
         }
       : emptyCustomer,
-    submit: (values) => saveCustomer(customer?.id ?? null, values),
+    submit: (values) => saveCustomer(scope.sellerId, customer?.id ?? null, values),
     onSuccess: onDone,
   });
   const { errors } = form.formState;

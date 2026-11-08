@@ -1,11 +1,13 @@
 /**
- * Invoice queries. Seller-facing functions are scoped to the signed-in seller;
- * `getPublicInvoice` is the only unauthenticated read (by pay-link token).
+ * Invoice queries. Seller-facing functions are scoped to one seller: the
+ * signed-in seller, or — when `sellerId` is passed — the seller an admin is
+ * managing (see `resolveSellerId`). `getPublicInvoice` is the only
+ * unauthenticated read (by pay-link token).
  */
 import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
-import { requireSellerId } from "@/lib/auth/seller";
+import { resolveSellerId } from "@/lib/auth/seller-scope";
 import { endOfTehranDay, isIsoDay, startOfTehranDay, toTehranIsoDay } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { rialToToman, tomanToRial } from "@/lib/money";
@@ -105,8 +107,8 @@ function buildWhere(sellerId: bigint, params: InvoiceListParams): Prisma.Invoice
   };
 }
 
-export async function listInvoices(params: InvoiceListParams) {
-  const sellerId = await requireSellerId();
+export async function listInvoices(params: InvoiceListParams, scopeSellerId?: string | null) {
+  const sellerId = await resolveSellerId(scopeSellerId);
   const where = buildWhere(sellerId, params);
 
   const [total, sellerTotal, byStatus] = await Promise.all([
@@ -164,6 +166,81 @@ export async function listInvoices(params: InvoiceListParams) {
   };
 }
 
+/** Safety cap for one export file (all filtered rows, not just one page). */
+export const INVOICE_EXPORT_LIMIT = 20_000;
+
+export type InvoiceExportRow = {
+  id: string;
+  invoiceDate: Date | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+  customer: { name: string; phone: string; economicCode: string | null };
+  /** Toman. */
+  total: bigint;
+  paid: boolean;
+  paidAt: Date | null;
+  payLink: string | null;
+  linkViews: number;
+  items: { code: string; name: string; quantity: number; price: bigint; lineTotal: bigint }[];
+};
+
+/**
+ * Every invoice matching the list filters and sort (pagination ignored), with
+ * line items — for the Excel report. Seller-scoped.
+ */
+export async function listInvoicesForExport(params: InvoiceListParams, scopeSellerId?: string | null) {
+  const sellerId = await resolveSellerId(scopeSellerId);
+  const where = buildWhere(sellerId, params);
+
+  const [seller, total, rows] = await Promise.all([
+    db.seller.findUniqueOrThrow({ where: { id: sellerId }, select: { name: true } }),
+    db.invoice.count({ where }),
+    db.invoice.findMany({
+      where,
+      orderBy: orderBy[params.sort],
+      take: INVOICE_EXPORT_LIMIT,
+      select: {
+        id: true,
+        invoiceDate: true,
+        createdAt: true,
+        updatedAt: true,
+        totalPrice: true,
+        paid: true,
+        paidAt: true,
+        payLink: true,
+        linkViews: true,
+        customer: { select: { name: true, phone: true, economicCode: true } },
+        orders: {
+          orderBy: { id: "asc" },
+          select: { quantity: true, price: true, product: { select: { code: true, name: true } } },
+        },
+      },
+    }),
+  ]);
+
+  const items: InvoiceExportRow[] = rows.map((row) => ({
+    id: row.id.toString(),
+    invoiceDate: row.invoiceDate ?? row.createdAt,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    customer: row.customer,
+    total: rialToToman(row.totalPrice),
+    paid: row.paid,
+    paidAt: row.paidAt,
+    payLink: row.payLink,
+    linkViews: row.linkViews,
+    items: row.orders.map((order) => ({
+      code: order.product.code,
+      name: order.product.name,
+      quantity: order.quantity,
+      price: rialToToman(order.price),
+      lineTotal: rialToToman(order.price * BigInt(order.quantity)),
+    })),
+  }));
+
+  return { seller, items, total, truncated: total > items.length };
+}
+
 export type InvoiceDetail = {
   id: string;
   customerId: string;
@@ -174,8 +251,11 @@ export type InvoiceDetail = {
 };
 
 /** Full invoice for the edit form (seller-scoped). */
-export async function getInvoiceForEdit(invoiceId: bigint): Promise<InvoiceDetail | null> {
-  const sellerId = await requireSellerId();
+export async function getInvoiceForEdit(
+  invoiceId: bigint,
+  scopeSellerId?: string | null,
+): Promise<InvoiceDetail | null> {
+  const sellerId = await resolveSellerId(scopeSellerId);
   const invoice = await db.invoice.findFirst({
     where: { id: invoiceId, sellerId },
     select: {
@@ -263,8 +343,11 @@ function toDocument(row: DocumentRow): InvoiceDocument {
 }
 
 /** Invoice document for printing (seller-scoped). */
-export async function getInvoiceDocument(invoiceId: bigint): Promise<InvoiceDocument | null> {
-  const sellerId = await requireSellerId();
+export async function getInvoiceDocument(
+  invoiceId: bigint,
+  scopeSellerId?: string | null,
+): Promise<InvoiceDocument | null> {
+  const sellerId = await resolveSellerId(scopeSellerId);
   const row = await db.invoice.findFirst({ where: { id: invoiceId, sellerId }, select: documentSelect });
   return row ? toDocument(row) : null;
 }

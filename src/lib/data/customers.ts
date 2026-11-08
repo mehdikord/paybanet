@@ -1,10 +1,11 @@
 /**
- * Customer queries for the seller panel. Always scoped to the signed-in seller.
+ * Customer queries for the seller panel. Scoped to the signed-in seller, or to
+ * the seller an admin is managing when `sellerId` is passed.
  */
 import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
-import { requireSellerId } from "@/lib/auth/seller";
+import { resolveSellerId } from "@/lib/auth/seller-scope";
 import { db } from "@/lib/db";
 import { toLatinDigits } from "@/lib/phone";
 import { getEnum, getPage, getString, paginate, type RawSearchParams } from "./list-params";
@@ -50,8 +51,8 @@ const orderBy: Record<CustomerListParams["sort"], Prisma.CustomerOrderByWithRela
   invoices: [{ invoices: { _count: "desc" } }, { id: "desc" }],
 };
 
-export async function listCustomers(params: CustomerListParams) {
-  const sellerId = await requireSellerId();
+export async function listCustomers(params: CustomerListParams, scopeSellerId?: string | null) {
+  const sellerId = await resolveSellerId(scopeSellerId);
   const q = toLatinDigits(params.q);
 
   const where: Prisma.CustomerWhereInput = {

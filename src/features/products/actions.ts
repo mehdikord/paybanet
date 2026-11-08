@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 
 import { Prisma } from "@/generated/prisma/client";
-import { requireSellerId } from "@/lib/auth/seller";
+import { resolveSellerId } from "@/lib/auth/seller-scope";
 import { db } from "@/lib/db";
 import { tomanToRial } from "@/lib/money";
 import type { MutationResult } from "@/lib/mutation";
@@ -17,10 +17,11 @@ function parseId(value: unknown): bigint | null {
 
 /** Creates a product (id = null) or updates one of the seller's products. */
 export async function saveProduct(
+  scopeSellerId: string | null,
   productId: string | null,
   input: unknown,
 ): Promise<MutationResult<"name" | "code" | "price" | "description">> {
-  const sellerId = await requireSellerId();
+  const sellerId = await resolveSellerId(scopeSellerId);
 
   const parsed = productSchema.safeParse(input);
   if (!parsed.success) {
@@ -62,8 +63,11 @@ export async function saveProduct(
 }
 
 /** Deletes a product, unless it already appears on an invoice. */
-export async function deleteProduct(productId: string): Promise<MutationResult> {
-  const sellerId = await requireSellerId();
+export async function deleteProduct(
+  scopeSellerId: string | null,
+  productId: string,
+): Promise<MutationResult> {
+  const sellerId = await resolveSellerId(scopeSellerId);
   const id = parseId(productId);
   if (!id) return { ok: false, message: "محصول پیدا نشد." };
 

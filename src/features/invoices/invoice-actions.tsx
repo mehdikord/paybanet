@@ -23,7 +23,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { payLinkPath } from "@/lib/pay-link";
-import { deleteInvoice } from "../actions";
+import { useSellerScope } from "@/features/seller-scope";
+import { scopePaths } from "@/features/seller-scope-paths";
+import { deleteInvoice } from "./actions";
 import { InvoiceFormDialog } from "./invoice-form-dialog";
 
 export function NewInvoiceButton() {
@@ -39,9 +41,8 @@ export function NewInvoiceButton() {
   );
 }
 
-const printPath = (id: string) => `/sellers/invoices/${id}/print`;
-
 export function PrintInvoiceButton({ invoiceId, number }: { invoiceId: string; number: string }) {
+  const printPath = scopePaths(useSellerScope()).invoicePrint;
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -67,6 +68,8 @@ export function InvoiceRowActions({
   payLink: string | null;
   paid: boolean;
 }) {
+  const scope = useSellerScope();
+  const printPath = scopePaths(scope).invoicePrint;
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -131,7 +134,7 @@ export function InvoiceRowActions({
             ? "این فاکتور پرداخت شده است. با حذف، فاکتور و لینک پرداختش برای همیشه حذف می‌شود."
             : "فاکتور و لینک پرداختش برای همیشه حذف می‌شود. این کار برگشت‌پذیر نیست."
         }
-        onConfirm={() => deleteInvoice(invoiceId)}
+        onConfirm={() => deleteInvoice(scope.sellerId, invoiceId)}
       />
     </>
   );
