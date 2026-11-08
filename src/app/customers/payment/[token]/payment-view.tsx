@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 
 import { LogoMark } from "@/components/brand/logo";
 import { DatePicker } from "@/components/data/date-picker";
+import { TimePicker } from "@/components/data/time-picker";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { formatToman } from "@/lib/money";
@@ -21,10 +22,12 @@ export type PaymentInvoice = {
   customerName: string;
   total: string;
   paid: boolean;
-  /** Jalali date of payment, formatted on the server. */
+  /** Jalali date and time of payment, formatted on the server. */
   paidDate: string | null;
   /** Today in Tehran ("YYYY-MM-DD"), the default payment day. */
   today: string;
+  /** Now in Tehran ("HH:MM"), the default payment time. */
+  nowTime: string;
   items: { name: string; quantity: number; price: string; lineTotal: string }[];
 };
 
@@ -32,6 +35,9 @@ const paidDateFormat = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
   year: "numeric",
   month: "long",
   day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
   timeZone: "Asia/Tehran",
 });
 
@@ -40,6 +46,7 @@ export function PaymentView({ invoice }: { invoice: PaymentInvoice }) {
   const [paidDate, setPaidDate] = useState(invoice.paidDate);
   const [justPaid, setJustPaid] = useState(false);
   const [paidDay, setPaidDay] = useState(invoice.today);
+  const [paidTime, setPaidTime] = useState(invoice.nowTime);
   const [error, setError] = useState<string>();
   const [isPending, startTransition] = useTransition();
   const viewRecorded = useRef(false);
@@ -54,7 +61,7 @@ export function PaymentView({ invoice }: { invoice: PaymentInvoice }) {
   const pay = () =>
     startTransition(async () => {
       setError(undefined);
-      const result = await payInvoice(invoice.token, paidDay);
+      const result = await payInvoice(invoice.token, paidDay, paidTime);
       if (!result.ok) {
         setError(result.message ?? "پرداخت انجام نشد. دوباره تلاش کنید.");
         return;
@@ -151,23 +158,31 @@ export function PaymentView({ invoice }: { invoice: PaymentInvoice }) {
                 <CheckCircle2Icon className="size-6 shrink-0 text-primary" />
                 <div>
                   <p className="font-bold">{justPaid ? "پرداخت با موفقیت انجام شد." : "این فاکتور پرداخت شده است."}</p>
-                  {paidDate && <p className="text-sm opacity-80">تاریخ پرداخت: {paidDate}</p>}
+                  {paidDate && <p className="text-sm opacity-80">زمان پرداخت: {paidDate}</p>}
                 </div>
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between gap-3">
-                  <label htmlFor="paid-day" className="shrink-0 text-sm font-medium">
-                    تاریخ پرداخت
-                  </label>
-                  <DatePicker
-                    id="paid-day"
-                    value={paidDay}
-                    onChange={setPaidDay}
-                    disableFuture
-                    className="w-auto min-w-44"
-                  />
-                </div>
+                <fieldset className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                  <legend className="sr-only">تاریخ و ساعت پرداخت</legend>
+                  <span aria-hidden="true" className="shrink-0 text-sm font-medium">
+                    تاریخ و ساعت پرداخت
+                  </span>
+                  <div className="flex gap-2">
+                    <DatePicker
+                      id="paid-day"
+                      value={paidDay}
+                      onChange={setPaidDay}
+                      className="w-auto min-w-40"
+                    />
+                    <TimePicker
+                      id="paid-time"
+                      value={paidTime}
+                      onChange={setPaidTime}
+                      className="w-auto"
+                    />
+                  </div>
+                </fieldset>
                 {error && (
                   <p role="alert" className="text-center text-sm text-destructive">
                     {error}

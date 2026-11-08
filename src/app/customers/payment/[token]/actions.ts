@@ -1,35 +1,29 @@
 "use server";
 
-import { isIsoDay, startOfTehranDay, todayIsoDay } from "@/lib/dates";
+import { isIsoDay, tehranDateTime, TIME_REGEX } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { PAY_LINK_REGEX } from "@/lib/pay-link";
 
 export type PayResult = { ok: boolean; paidAt?: string; message?: string };
 
 /**
- * The payment instant for a chosen Tehran calendar day: today → now; another
- * day → that day at the current Tehran time of day (so the time stays realistic).
- */
-function paidAtFor(paidDay: string, now: Date) {
-  const today = todayIsoDay();
-  if (paidDay === today) return now;
-  const timeOfDay = now.getTime() - startOfTehranDay(today).getTime();
-  return new Date(startOfTehranDay(paidDay).getTime() + timeOfDay);
-}
-
-/**
- * TEST payment: marks the invoice as paid without a gateway, on the payment
- * day picked on the page (Gregorian "YYYY-MM-DD"; defaults to today, never in the future).
+ * TEST payment: marks the invoice as paid without a gateway, at the payment
+ * date and time picked on the page (Tehran day "YYYY-MM-DD" + "HH:MM"; both
+ * default to now on the page; any past or future date/time is accepted).
  * Replace with: create gateway transaction → redirect → verify callback → mark paid.
  */
-export async function payInvoice(token: string, paidDay?: string): Promise<PayResult> {
+export async function payInvoice(token: string, paidDay?: string, paidTime?: string): Promise<PayResult> {
   if (!PAY_LINK_REGEX.test(token)) return { ok: false, message: "لینک پرداخت معتبر نیست." };
 
-  const day = paidDay ?? todayIsoDay();
-  if (!isIsoDay(day)) return { ok: false, message: "تاریخ پرداخت معتبر نیست." };
-  if (day > todayIsoDay()) return { ok: false, message: "تاریخ پرداخت نمی‌تواند بعد از امروز باشد." };
+  let paidAt = new Date();
+  if (paidDay !== undefined || paidTime !== undefined) {
+    if (typeof paidDay !== "string" || !isIsoDay(paidDay)) return { ok: false, message: "تاریخ پرداخت معتبر نیست." };
+    if (typeof paidTime !== "string" || !TIME_REGEX.test(paidTime)) {
+      return { ok: false, message: "ساعت پرداخت معتبر نیست." };
+    }
+    paidAt = tehranDateTime(paidDay, paidTime);
+  }
 
-  const paidAt = paidAtFor(day, new Date());
   // Conditional update: a second click (or a race) can never pay twice or move paid_at.
   const result = await db.invoice.updateMany({
     where: { payLink: token, paid: false },

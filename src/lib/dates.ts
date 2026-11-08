@@ -47,6 +47,30 @@ export function todayIsoDay() {
   return toTehranIsoDay(new Date());
 }
 
+export const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+const tehranTimeFormat = new Intl.DateTimeFormat("en-GB", {
+  timeZone: APP_TIME_ZONE,
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/** Instant → its Tehran wall-clock time, as "HH:MM" (24h). */
+export function toTehranTime(date: Date) {
+  return tehranTimeFormat.format(date);
+}
+
+/** Now in Tehran, as "HH:MM". */
+export function nowTehranTime() {
+  return toTehranTime(new Date());
+}
+
+/** Tehran day "YYYY-MM-DD" + wall-clock "HH:MM" → the instant. */
+export function tehranDateTime(isoDay: string, time: string) {
+  return new Date(`${isoDay}T${time}:00${TEHRAN_OFFSET}`);
+}
+
 /**
  * Client side: a date picked in a calendar (local midnight of that day)
  * → "YYYY-MM-DD" using its local calendar components.
